@@ -1,5 +1,6 @@
 Custom module for waybar to show the cpu usage as a histogram
 
-Based on the original [cpu
-module](https://github.com/Alexays/Waybar/blob/master/src/modules/cpu.cpp)
-code from the waybar project to compute the cpu usage.
+Based on the original [cpu module](https://github.com/Alexays/Waybar/blob/master/src/modules/cpu.cpp) code from the waybar project to
+compute the cpu usage.
+
+
