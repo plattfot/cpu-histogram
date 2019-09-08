@@ -22,7 +22,7 @@
 
 #include "cpu.hpp"
 
-#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <docopt/docopt.h>
 #include <json/json.h>
 
@@ -221,6 +221,14 @@ Json::Value updateJson( Json::Value&& output,
 {
   output["text"] = histogram.str();
   output["percentage"] = cpu_usage[0];
+
+  std::stringstream tooltip;
+  fmt::print(tooltip, "Cpu: {}%\n", cpu_usage[0]);
+  for(size_t i = 1, I = cpu_usage.size(); i < I; ++i )
+  {
+    fmt::print(tooltip, "Cpu{}: {}%\n", i-1, cpu_usage[i]);
+  }
+  output["tooltip"] = tooltip.str();
 
   if(cpu_usage[0] >= high_load )
   {
