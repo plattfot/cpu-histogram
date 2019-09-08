@@ -1,4 +1,4 @@
-Custom module for waybar to show the cpu usage as a histogram
+Custom module for waybar to show the cpu usage as a histogram.
 
 Based on the cpu module from https://github.com/Alexays/Waybar.
 
@@ -26,4 +26,4 @@ ninja -C build install
 
 If you want to install it somewhere else change `--prefix`. And if you
 want to package it up before installing use `DESTDIR=pkg ninja -C build
-install`. Where DESTDIR is relative to the `build` directory.
+install`. Where `DESTDIR` is relative to the `build` directory.
