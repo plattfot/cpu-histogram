@@ -8,4 +8,5 @@ fmt = dependency('fmt', version: '>=6')
 jsoncpp = dependency('jsoncpp', version: '>=1.8')
 executable('cpu-hist', 'src/main.cpp', 'src/cpu.cpp',
            cpp_args: ['-DCPU_HIST_VERSION="'+meson.project_version()+'"'],
-           dependencies: [fmt, docopt, jsoncpp])
+           dependencies: [fmt, docopt, jsoncpp],
+           install: true)

@@ -14,3 +14,16 @@ In the `config` file, use:
         "interval": 10
     },
 ```
+
+# Building from source
+
+To build and install the binary to `$HOME/bin`.
+```json
+meson --buildtype=release --prefix=$HOME --unity=on build
+ninja -C build
+ninja -C build install
+```
+
+If you want to install it somewhere else change `--prefix`. And if you
+want to package it up before installing use `DESTDIR=pkg ninja -C build
+install`. Where DESTDIR is relative to the `build` directory.
