@@ -223,10 +223,10 @@ Json::Value updateJson( Json::Value&& output,
   output["percentage"] = cpu_usage[0];
 
   std::stringstream tooltip;
-  fmt::print(tooltip, "Cpu: {}%\n", cpu_usage[0]);
+  fmt::print(tooltip, "CPU: {}%\n", cpu_usage[0]);
   for(size_t i = 1, I = cpu_usage.size(); i < I; ++i )
   {
-    fmt::print(tooltip, "Cpu{}: {}%\n", i-1, cpu_usage[i]);
+    fmt::print(tooltip, "CPU{}: {}%\n", i-1, cpu_usage[i]);
   }
   output["tooltip"] = tooltip.str();
 
