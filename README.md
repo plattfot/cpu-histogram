@@ -5,7 +5,7 @@ module](https://github.com/Alexays/Waybar/blob/master/src/modules/cpu.cpp)
 from [waybar](https://github.com/Alexays/Waybar).
 
 # Usage
-
+## waybar
 In the `config` file, use:
 
 ```json
