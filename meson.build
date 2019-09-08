@@ -5,6 +5,7 @@ project('cpu-hist', 'cpp',
 
 docopt = dependency('docopt', version: '>=0.6')
 fmt = dependency('fmt', version: '>=6')
+jsoncpp = dependency('jsoncpp', version: '>=1.8')
 executable('cpu-hist', 'src/main.cpp', 'src/cpu.cpp',
-           cpp_args: ['-DCPU_HIST_VERSION='+meson.project_version()],
-           dependencies: [fmt, docopt])
+           cpp_args: ['-DCPU_HIST_VERSION="'+meson.project_version()+'"'],
+           dependencies: [fmt, docopt, jsoncpp])

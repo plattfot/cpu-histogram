@@ -24,6 +24,7 @@
 
 #include <fmt/format.h>
 #include <docopt/docopt.h>
+#include <json/json.h>
 
 #include <string>
 #include <sstream>
@@ -32,36 +33,84 @@
 #include <chrono>
 #include <array>
 #include <cmath>
+#include <algorithm>
+
+#ifndef CPU_HIST_VERSION
+#  define CPU_HIST_VERSION "0.0.0"
+#endif
 
 static const char USAGE[] =
-R"(cpu-hist.
+R"(cpu-hist - custom module for waybar to show CPU usage as a histogram.
 
 Usage:
-  cpu-hist
+  cpu-hist [options]
 
 Options:
-  -h, --help    Display this help and exit.
+  -h, --help         Display this help and exit.
+  --high-load LOAD   Set the threshold for the high-load class [default: 75]
+  --bins N           Number of bins for the histogram [default: 5]
+  --loop             If to loop indefinitely.
+  --version          Show version
 )";
 
-std::string usageToBar( const size_t bucket, const size_t num_cpus )
+class Histogram
 {
-  const std::array<std::string,8>
-    bar{"▁" ,"▂" ,"▃" ,"▄" ,"▅" ,"▆" ,"▇" ,"█"};
+public:
+  Histogram( const size_t num_bins, const size_t num_cpus ):
+    m_cpus( num_cpus ),
+    m_bins(num_bins, 0)
+  {}
 
-  const double percentage = bucket/ static_cast<double>(num_cpus) * (bar.size()-1);
-  const size_t index = static_cast<size_t>(std::round(percentage));
+  const std::vector<size_t>& bins() const { return m_bins; }
 
-  return bar[index];
-}
+  /// Return the histogram as a string
+  std::string str() const;
+
+  /// Update bins with values in range [fist, last].
+  template<typename Iterator>
+  void update(Iterator first, const Iterator last);
+
+  /// Set all bins to 0
+  void reset();
+private:
+  size_t m_cpus;
+  std::vector<size_t> m_bins;
+};
+
+std::vector<std::uint16_t> updateCpuUsage(std::vector<std::uint16_t>&& cpu_usage,
+                                          const std::vector<CPUInfo>& prev_info,
+                                          const std::vector<CPUInfo>& curr_info);
+
+std::string usageToBar( const size_t value, const size_t total );
+Json::Value updateJson( Json::Value&& output,
+                        const Histogram& histogram,
+                        const std::uint16_t high_load,
+                        const std::vector<std::uint16_t>& cpu_usage);
 
 int main( int argc, char** argv )
 {
-  const auto args = docopt::docopt( USAGE,
-                                    {argv+1, argv + argc },
-                                    true, /*Show help*/
-                                    "cpu-hist version x.x.x");
+  const auto args = docopt::docopt(
+    USAGE,
+    {argv+1, argv + argc },
+    true, /*Show help*/
+    fmt::format("cpu-hist version {}", CPU_HIST_VERSION ));
 
   const std::string stat_filename = "/proc/stat";
+  size_t num_bins = 5;
+  if(auto it = args.find("--bins"); it != end(args))
+  {
+    assert(it->second.isString());
+    num_bins = std::stoul( it->second.asString() );
+  }
+
+  std::uint16_t high_load = 75;
+  if(auto it = args.find("--high-load"); it != end(args))
+  {
+    assert(it->second.isString());
+    high_load = static_cast<std::uint16_t>(
+      std::min(100ul, std::stoul(it->second.asString())));
+  }
+
   auto prev_info = parseCpuinfo( stat_filename );
 
   {
@@ -72,26 +121,98 @@ int main( int argc, char** argv )
   auto curr_info = parseCpuinfo( stat_filename );
 
   std::vector<std::uint16_t> cpu_usage;
+  cpu_usage = updateCpuUsage( std::move(cpu_usage), prev_info, curr_info);
+
+  const size_t num_cpus = cpu_usage.size()-1;
+  Histogram histogram(num_bins, num_cpus);
+  Json::Value output;
+  Json::StreamWriterBuilder builder;
+  builder["indentation"] = "";
+
+  histogram.update(std::next(begin(cpu_usage)), end(cpu_usage));
+  output = updateJson(std::move(output), histogram, high_load, cpu_usage);
+  fmt::print("{}\n", Json::writeString(builder, output));
+
+  if( auto it = args.find("--loop"); it != end(args) )
+  {
+    assert(it->second.isBool());
+    const bool loop = it->second.asBool();
+    while(loop)
+    {
+      histogram.reset();
+
+      prev_info = curr_info;
+      curr_info = parseCpuinfo( stat_filename );
+      cpu_usage = updateCpuUsage( std::move(cpu_usage), prev_info, curr_info);
+
+      histogram.update(std::next(begin(cpu_usage)), end(cpu_usage));
+
+      output = updateJson(std::move(output), histogram, high_load, cpu_usage);
+      fmt::print("{}\n", Json::writeString(builder, output));
+    }
+  }
+  return 0;
+}
+
+auto Histogram::str() const -> std::string
+{
+  std::stringstream text;
+  for( auto bin : m_bins )
+    text<<usageToBar(bin, m_cpus);
+  return text.str();
+}
+
+auto Histogram::reset() -> void
+{
+  std::fill(begin(m_bins), end(m_bins), 0);
+}
+
+template<typename Iterator>
+auto Histogram::update(Iterator first, const Iterator last) -> void
+{
+  for( ; first != last; ++first)
+  {
+    ++m_bins[*first/(100 / (m_bins.size()-1))];
+  }
+}
+
+std::vector<std::uint16_t> updateCpuUsage(std::vector<std::uint16_t>&& cpu_usage,
+                                          const std::vector<CPUInfo>& prev_info,
+                                          const std::vector<CPUInfo>& curr_info)
+{
+  cpu_usage.clear();
   cpu_usage.reserve(curr_info.size());
   for( size_t i = 0, I = curr_info.size(); i < I; ++i)
   {
     cpu_usage.emplace_back(getCpuUsage(prev_info[i], curr_info[i]));
   }
 
-  size_t num_buckets = 5;
-  std::vector<size_t> buckets(num_buckets, 0);
-  for( size_t i = 1, I = cpu_usage.size(); i < I; ++i)
+  return std::move(cpu_usage);
+}
+
+std::string usageToBar( const size_t value, const size_t total )
+{
+  const std::array<std::string,8>
+    bar{"▁" ,"▂" ,"▃" ,"▄" ,"▅" ,"▆" ,"▇" ,"█"};
+
+  const double percentage = value/ static_cast<double>(total) * (bar.size()-1);
+  const size_t index = static_cast<size_t>(std::round(percentage));
+
+  return bar[index];
+}
+
+Json::Value updateJson( Json::Value&& output,
+                        const Histogram& histogram,
+                        const std::uint16_t high_load,
+                        const std::vector<std::uint16_t>& cpu_usage)
+{
+  output["text"] = histogram.str();
+  output["percentage"] = cpu_usage[0];
+
+  if(cpu_usage[0] >= high_load )
   {
-    ++buckets[cpu_usage[i]/(100 / (num_buckets-1))];
+    output["class"] = "high-load";
   }
 
-  const size_t num_cpus = cpu_usage.size()-1;
-  std::stringstream text;
-  for( auto bucket : buckets )
-    text<<usageToBar(bucket, num_cpus);
-
-  fmt::print(R"({{"text": "{}"}})", text.str());
-  fmt::print("\n");
-
-  return 0;
+  return std::move(output);
 }
