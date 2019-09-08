@@ -19,6 +19,14 @@ In the `config` file, use:
 
 # Building from source
 
+## dependencies
+
+Install these with your package manager
+  - [fmt](https://fmt.dev/latest/index.html)
+  - [jsoncpp](https://github.com/open-source-parsers/jsoncpp)
+  - [docopt](https://github.com/docopt/docopt.cpp)
+
+## build
 To build and install the binary to `$HOME/bin`.
 ```json
 meson --buildtype=release --prefix=$HOME --unity=on build
