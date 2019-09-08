@@ -44,12 +44,14 @@ R"(cpu-hist - custom module for waybar to show CPU usage as a histogram.
 
 Usage:
   cpu-hist [options]
+  cpu-hist --loop [--sleep=S] [options]
 
 Options:
   -h, --help         Display this help and exit.
   --high-load LOAD   Set the threshold for the high-load class [default: 75]
   --bins N           Number of bins for the histogram [default: 5]
-  --loop             If to loop indefinitely.
+  --loop             If set, loop indefinitely.
+  --sleep S          When looping, set time between iterations. [default: 10]
   --version          Show version
 )";
 
@@ -137,8 +139,19 @@ int main( int argc, char** argv )
   {
     assert(it->second.isBool());
     const bool loop = it->second.asBool();
+
+    using namespace std::chrono_literals;
+    auto seconds = 10s;
+    if(auto it = args.find("--sleep"); it != end(args))
+    {
+      assert(it->second.isString());
+      seconds = static_cast<decltype(seconds)>(
+        std::stoul(it->second.asString()));
+    }
+
     while(loop)
     {
+      std::this_thread::sleep_for(seconds);
       histogram.reset();
 
       prev_info = curr_info;
