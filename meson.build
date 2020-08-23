@@ -1,6 +1,6 @@
 project('cpu-hist', 'cpp',
         default_options: ['cpp_std=c++17', 'b_ndebug=if-release'],
-        version: '0.2.0',
+        version: run_command(find_program('cat'), 'VERSION').stdout().strip(),
         license: 'MIT')
 
 

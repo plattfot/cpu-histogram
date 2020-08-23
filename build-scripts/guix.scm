@@ -6,11 +6,15 @@
   (gnu packages)
   (gnu packages serialization)
   (gnu packages pretty-print)
-  (gnu packages pkg-config))
+  (gnu packages pkg-config)
+  (ice-9 textual-ports))
 
 (package
   (name "waybar-cpu-histogram")
-  (version "0.2.0")
+  (version (let* ((version-port (open-input-file "VERSION"))
+                  (version (get-line version-port)))
+             (close-port version-port)
+             version))
   (source (local-file (dirname (dirname (current-filename))) #:recursive? #t))
   (build-system meson-build-system)
   (native-inputs
