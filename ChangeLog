@@ -1,0 +1,11 @@
+2020-08-23 Fredrik Salomonsson <plattfot@gmail.com>
+	* 0.2.0 :
+	Remove docopt dependency.
+	Now uses glibc's argp for commandline parsing.
+2020-08-23 Fredrik Salomonsson <plattfot@gmail.com>
+	* 0.1.0 :
+	Initial release.
+	Supports one shot or looping indefinitely.
+	Option to specify time between iteration if --loop is specified.
+	Option to specify number of bins.
+	Option to set the threshold for the high-load class.
