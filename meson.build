@@ -3,10 +3,20 @@ project('cpu-hist', 'cpp',
         version: '0.1.0',
         license: 'MIT')
 
+
+configure_file(
+  output: 'version.hpp',
+  input: 'src/version.hpp.in',
+  configuration:
+    {
+      'CPU_HIST_VERSION': meson.project_version(),
+    })
+configuration_include = include_directories('.')
+
 docopt = dependency('docopt', version: '>=0.6')
 fmt = dependency('fmt', version: '>=6')
 jsoncpp = dependency('jsoncpp', version: '>=1.8')
 executable('cpu-hist', 'src/main.cpp', 'src/cpu.cpp',
-           cpp_args: ['-DCPU_HIST_VERSION="'+meson.project_version()+'"'],
+           include_directories: configuration_include,
            dependencies: [fmt, docopt, jsoncpp],
            install: true)

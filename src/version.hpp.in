@@ -1,0 +1,4 @@
+#pragma once
+
+#define CPU_HIST_VERSION "@CPU_HIST_VERSION@"
+

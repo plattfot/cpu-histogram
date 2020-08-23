@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "cpu.hpp"
+#include "version.hpp"
 
 #include <fmt/ostream.h>
 #include <docopt/docopt.h>
@@ -36,9 +37,6 @@
 #include <cassert>
 #include <algorithm>
 
-#ifndef CPU_HIST_VERSION
-#  define CPU_HIST_VERSION "0.0.0"
-#endif
 
 static const char USAGE[] =
 R"(cpu-hist - custom module for waybar to show CPU usage as a histogram.
