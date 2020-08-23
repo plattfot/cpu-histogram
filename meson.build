@@ -1,5 +1,5 @@
 project('cpu-hist', 'cpp',
-        default_options: ['cpp_std=c++17'],
+        default_options: ['cpp_std=c++17', 'b_ndebug=if-release'],
         version: '0.1.0',
         license: 'MIT')
 

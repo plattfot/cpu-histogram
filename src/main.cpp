@@ -33,6 +33,7 @@
 #include <chrono>
 #include <array>
 #include <cmath>
+#include <cassert>
 #include <algorithm>
 
 #ifndef CPU_HIST_VERSION
