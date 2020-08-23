@@ -24,9 +24,9 @@
 #include "version.hpp"
 
 #include <fmt/ostream.h>
-#include <docopt/docopt.h>
 #include <json/json.h>
 
+#include <argp.h>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -37,22 +37,68 @@
 #include <cassert>
 #include <algorithm>
 
+const char* argp_program_version = "cpu-hist version " CPU_HIST_VERSION;
 
-static const char USAGE[] =
-R"(cpu-hist - custom module for waybar to show CPU usage as a histogram.
+static char doc[] =
+  R"doc(Custom module for waybar to show CPU usage as a histogram.
 
 Usage:
   cpu-hist [options]
   cpu-hist --loop [--sleep=S] [options]
 
 Options:
-  -h, --help         Display this help and exit.
-  --high-load LOAD   Set the threshold for the high-load class [default: 75]
-  --bins N           Number of bins for the histogram [default: 5]
-  --loop             If set, loop indefinitely.
-  --sleep S          When looping, set time between iterations. [default: 10]
-  --version          Show version
-)";
+)doc";
+
+enum Key {
+  HIGH_LOAD = 1000,
+  BINS,
+  LOOP,
+  SLEEP,
+};
+
+// Key values above ascii characters removes the short option.
+static struct argp_option options[] = {
+  {"high-load", Key::HIGH_LOAD, "LOAD",   0, "Set the threshold for the high-load class [default: 75]"},
+  {"bins",      Key::BINS,      "N",      0, "Number of bins for the histogram [default: 5]"},
+  {"loop",      Key::LOOP,       0,       0, "If set, loop indefinitely"},
+  {"sleep",     Key::SLEEP,     "S",      0,
+   "When looping, set time between iterations. [default: 10]"},
+  { 0 }
+};
+
+struct Arguments
+{
+  std::uint16_t high_load = 75;
+  size_t num_bins = 5;
+  bool loop = false;
+  std::chrono::seconds sleep = static_cast<std::chrono::seconds>(10);
+};
+
+static error_t
+parseOpt(int key, char* arg, struct argp_state *state)
+{
+  Arguments* arguments = static_cast<Arguments*>(state->input);
+
+  switch (key)
+  {
+  case Key::HIGH_LOAD:
+    arguments->high_load = static_cast<std::uint16_t>(
+      std::min(100ul, std::stoul(arg)));
+    break;
+  case Key::BINS:
+    arguments->num_bins = std::stoul(arg);
+    break;
+  case Key::LOOP:
+    arguments->loop = true;
+    break;
+  case Key::SLEEP:
+    arguments->sleep = static_cast<std::chrono::seconds>(std::stoul(arg));
+    break;
+  default:
+    return ARGP_ERR_UNKNOWN;
+  }
+  return 0;
+}
 
 class Histogram
 {
@@ -90,27 +136,11 @@ Json::Value updateJson( Json::Value&& output,
 
 int main( int argc, char** argv )
 {
-  const auto args = docopt::docopt(
-    USAGE,
-    {argv+1, argv + argc },
-    true, /*Show help*/
-    fmt::format("cpu-hist version {}", CPU_HIST_VERSION ));
+  Arguments arguments;
+  const static argp argp = { options, parseOpt, 0, doc };
+  argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
   const std::string stat_filename = "/proc/stat";
-  size_t num_bins = 5;
-  if(auto it = args.find("--bins"); it != end(args))
-  {
-    assert(it->second.isString());
-    num_bins = std::stoul( it->second.asString() );
-  }
-
-  std::uint16_t high_load = 75;
-  if(auto it = args.find("--high-load"); it != end(args))
-  {
-    assert(it->second.isString());
-    high_load = static_cast<std::uint16_t>(
-      std::min(100ul, std::stoul(it->second.asString())));
-  }
 
   auto prev_info = parseCpuinfo( stat_filename );
 
@@ -125,44 +155,30 @@ int main( int argc, char** argv )
   cpu_usage = updateCpuUsage( std::move(cpu_usage), prev_info, curr_info);
 
   const size_t num_cpus = cpu_usage.size()-1;
-  Histogram histogram(num_bins, num_cpus);
+  Histogram histogram(arguments.num_bins, num_cpus);
   Json::Value output;
   Json::StreamWriterBuilder builder;
   builder["indentation"] = "";
 
   histogram.update(std::next(begin(cpu_usage)), end(cpu_usage));
-  output = updateJson(std::move(output), histogram, high_load, cpu_usage);
+  output = updateJson(std::move(output), histogram, arguments.high_load, cpu_usage);
   fmt::print("{}\n", Json::writeString(builder, output));
 
-  if( auto it = args.find("--loop"); it != end(args) )
+  while(arguments.loop)
   {
-    assert(it->second.isBool());
-    const bool loop = it->second.asBool();
+    std::this_thread::sleep_for(arguments.sleep);
+    histogram.reset();
 
-    using namespace std::chrono_literals;
-    auto seconds = 10s;
-    if(auto it = args.find("--sleep"); it != end(args))
-    {
-      assert(it->second.isString());
-      seconds = static_cast<decltype(seconds)>(
-        std::stoul(it->second.asString()));
-    }
+    prev_info = curr_info;
+    curr_info = parseCpuinfo( stat_filename );
+    cpu_usage = updateCpuUsage( std::move(cpu_usage), prev_info, curr_info);
 
-    while(loop)
-    {
-      std::this_thread::sleep_for(seconds);
-      histogram.reset();
+    histogram.update(std::next(begin(cpu_usage)), end(cpu_usage));
 
-      prev_info = curr_info;
-      curr_info = parseCpuinfo( stat_filename );
-      cpu_usage = updateCpuUsage( std::move(cpu_usage), prev_info, curr_info);
-
-      histogram.update(std::next(begin(cpu_usage)), end(cpu_usage));
-
-      output = updateJson(std::move(output), histogram, high_load, cpu_usage);
-      fmt::print("{}\n", Json::writeString(builder, output));
-    }
+    output = updateJson(std::move(output), histogram, arguments.high_load, cpu_usage);
+    fmt::print("{}\n", Json::writeString(builder, output));
   }
+
   return 0;
 }
 
