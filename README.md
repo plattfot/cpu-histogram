@@ -36,3 +36,9 @@ ninja -C build install
 If you want to install it somewhere else change `--prefix`. And if you
 want to package it up before installing use `DESTDIR=pkg ninja -C build
 install`. Where `DESTDIR` is relative to the `build` directory.
+
+## Using guix
+
+Run `guix package -f build-scripts/guix.scm` and it will build and
+install it to your current profile.
+
