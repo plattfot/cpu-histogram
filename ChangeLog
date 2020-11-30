@@ -1,7 +1,10 @@
+2020-11-30 Fredrik Salomonsson <plattfot@gmail.com>
+	* 0.4.0 :
+	Better histogram distribution.
 2020-08-23 Fredrik Salomonsson <plattfot@gmail.com>
 	* 0.3.0 :
-	Add build script for guix
-	Add VERSION file that specify the version
+	Add build script for guix.
+	Add VERSION file that specify the version.
 2020-08-23 Fredrik Salomonsson <plattfot@gmail.com>
 	* 0.2.0 :
 	Remove docopt dependency.
