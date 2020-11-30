@@ -1,4 +1,7 @@
 2020-11-30 Fredrik Salomonsson <plattfot@gmail.com>
+	* 0.4.1 :
+	Fix bug in histogram distribution.
+2020-11-30 Fredrik Salomonsson <plattfot@gmail.com>
 	* 0.4.0 :
 	Better histogram distribution.
 2020-08-23 Fredrik Salomonsson <plattfot@gmail.com>
