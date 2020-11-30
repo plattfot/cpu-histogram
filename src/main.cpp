@@ -200,7 +200,7 @@ auto Histogram::update(Iterator first, const Iterator last) -> void
 {
   for( ; first != last; ++first)
   {
-    ++m_bins[std::max(*first/(100/m_bins.size()), m_bins.size()-1)];
+    ++m_bins[std::min(*first/(100/m_bins.size()), m_bins.size()-1)];
   }
 }
 
