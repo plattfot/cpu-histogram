@@ -220,13 +220,20 @@ std::vector<std::uint16_t> updateCpuUsage(std::vector<std::uint16_t>&& cpu_usage
 
 std::string usageToBar( const size_t value, const size_t total )
 {
-  const std::array<std::string,8>
-    bar{"▁" ,"▂" ,"▃" ,"▄" ,"▅" ,"▆" ,"▇" ,"█"};
+  if (value > 0)
+  {
+    const std::array<std::string,8>
+      bar{"▁" ,"▂" ,"▃" ,"▄" ,"▅" ,"▆" ,"▇" ,"█"};
 
-  const double percentage = value/ static_cast<double>(total) * (bar.size()-1);
-  const size_t index = static_cast<size_t>(std::round(percentage));
+    const double percentage = value/ static_cast<double>(total) * (bar.size()-1);
+    const size_t index = static_cast<size_t>(std::round(percentage));
 
-  return bar[index];
+    return bar[index];
+  }
+  else
+  {
+    return " ";
+  }
 }
 
 Json::Value updateJson( Json::Value&& output,
