@@ -1,3 +1,6 @@
+2021-10-21 Fredrik Salomonsson <plattfot@gmail.com>
+	* 0.4.2 :
+	Update histogram to use whitespace for bins with no cpus in them.
 2020-11-30 Fredrik Salomonsson <plattfot@gmail.com>
 	* 0.4.1 :
 	Fix bug in histogram distribution.
